@@ -108,6 +108,8 @@ def rank0_print(*args):
 def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: str, bias="none"):
     """Collects the state dict and dump to disk."""
     # check if zero3 mode enabled
+    print(f"safe_save_model_for_hf_trainer: {output_dir}")
+    print(f"is_deepspeed_zero3_enabled: {deepspeed.is_deepspeed_zero3_enabled()}")
     if deepspeed.is_deepspeed_zero3_enabled():
         state_dict = trainer.model_wrapped._zero3_consolidated_16bit_state_dict()
     else:
@@ -117,8 +119,8 @@ def safe_save_model_for_hf_trainer(trainer: transformers.Trainer, output_dir: st
             )
         else:
             state_dict = trainer.model.state_dict()
-    if trainer.args.should_save and trainer.args.local_rank == 0:
-        trainer._save(output_dir, state_dict=state_dict)
+    #if trainer.args.should_save and trainer.args.local_rank == 0:
+    trainer._save(output_dir, state_dict=state_dict)
 
 
 def preprocess(
@@ -254,7 +256,8 @@ def make_supervised_data_module(
 
 def train():
     global local_rank
-    
+
+    output_dir = "/root/data/qwen/output"
     parser = transformers.HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments, LoraArguments)
     )
@@ -360,7 +363,7 @@ def train():
     trainer.train()
     trainer.save_state()
 
-    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=training_args.output_dir, bias=lora_args.lora_bias)
+    safe_save_model_for_hf_trainer(trainer=trainer, output_dir=output_dir, bias=lora_args.lora_bias)
 
 
 if __name__ == "__main__":
